@@ -1,0 +1,3 @@
+-x c
+-Isrc
+-I/usr/local/include
