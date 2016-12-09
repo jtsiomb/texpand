@@ -148,7 +148,7 @@ static void print_usage(const char *progname, FILE *fp)
 	fprintf(fp, "Options:\n");
 	fprintf(fp, "   -o <fname>: specify output filename\n");
 	fprintf(fp, "   -uvset <n>: specify which UV set to use (default: 0)\n");
-	fprintf(fp, "   -force, -f: use of all meshes specified without matching the texture filename\n");
+	fprintf(fp, "   -force, -f: use all meshes in mask gen. without matching the texture filename\n");
 	fprintf(fp, "   -genmask: output the texture usage mask\n");
 	fprintf(fp, "   -mesh <fname>: use mesh/scene file for generating the texture usage mask\n");
 	fprintf(fp, "   -mask <fname>: use a mask file instead of generating it from geometry mesh\n");

@@ -45,7 +45,7 @@ Usage: ./texpand [options] <texture file>
 Options:
    -o <fname>: specify output filename
    -uvset <n>: specify which UV set to use (default: 0)
-   -force, -f: use of all meshes specified without matching the texture filename
+   -force, -f: use all meshes in mask gen. without matching the texture filename
    -genmask: output the texture usage mask
    -mesh <fname>: use mesh/scene file for generating the texture usage mask
    -mask <fname>: use a mask file instead of generating it from geometry mesh
