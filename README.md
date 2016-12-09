@@ -6,6 +6,8 @@ content pipeline for games, or other graphics programs. Its main purpose is to
 expand texels to cover all adjacent unused areas in the image, in order to avoid
 filtering artifacts during rendering.
 
+![result](http://nuclear.mutantstargoat.com/sw/texpand/img/shot.jpg)
+
 Additionally, `texpand` is also able to produce texture coverage images,
 visualizing the unwrapped 3D models in texture space, which can be used as input
 for the expand operation, or used as reference for artists to paint the texture
