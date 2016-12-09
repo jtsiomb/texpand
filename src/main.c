@@ -19,7 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <imago2.h>
-#include "genmask.h"
+
+/* in genmask.c */
+int mask_from_scene(struct img_pixmap *mask, int xsz, int ysz, const char *fname,
+		int uvset, const char *filter);
+
+/* in expand.c */
+int expand(struct img_pixmap *res, struct img_pixmap *img, struct img_pixmap *mask);
 
 static int mask_from_alpha(struct img_pixmap *mask, struct img_pixmap *img);
 static float calc_usage(struct img_pixmap *mask);
@@ -39,7 +45,7 @@ static struct img_pixmap img;
 
 int main(int argc, char **argv)
 {
-	struct img_pixmap mask;
+	struct img_pixmap mask, res;
 
 	if(parse_args(argc, argv) == -1) {
 		return 1;
@@ -48,12 +54,13 @@ int main(int argc, char **argv)
 	img_init(&img);
 	img_init(&mask);
 
-	if(img_load(&img, opt_tex_fname) == -1) {
+	if(img_load(&img, opt_tex_fname) == -1 || img_convert(&img, IMG_FMT_RGBAF) == -1) {
 		fprintf(stderr, "failed to load image: %s\n", opt_tex_fname);
 		return 1;
 	}
+
 	if(opt_mask_fname) {
-		if(img_load(&mask, opt_mask_fname) == -1) {
+		if(img_load(&mask, opt_mask_fname) == -1 || img_convert(&mask, IMG_FMT_GREY8)) {
 			fprintf(stderr, "failed to load mask file: %s\n", opt_mask_fname);
 			return 1;
 		}
@@ -61,7 +68,6 @@ int main(int argc, char **argv)
 			fprintf(stderr, "texture (%s) and mask (%s) dimensions differ\n", opt_tex_fname, opt_mask_fname);
 			return 1;
 		}
-		img_convert(&mask, IMG_FMT_GREY8);
 
 	} else if(opt_maskalpha) {
 		if(!img_has_alpha(&img)) {
@@ -104,8 +110,16 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	/* TODO continue */
-
+	img_init(&res);
+	if(img_copy(&res, &img) == -1) {
+		fprintf(stderr, "failed to allocate result image\n");
+		return 1;
+	}
+	expand(&res, &img, &mask);
+	if(img_save(&res, opt_out_fname) == -1) {
+		fprintf(stderr, "failed to write output file: %s\n", opt_out_fname);
+		return 1;
+	}
 	return 0;
 }
 

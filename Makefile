@@ -5,8 +5,8 @@ obj = $(src:.c=.o)
 dep = $(obj:.o=.d)
 bin = texpand
 
-CFLAGS = -pedantic -Wall -g
-LDFLAGS = -lGL -lassimp -lX11 -limago
+CFLAGS = -pedantic -Wall -g -O3 -fopenmp
+LDFLAGS = -lGL -lassimp -lX11 -limago -lgomp
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)

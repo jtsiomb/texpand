@@ -132,7 +132,7 @@ static void draw_uvmesh(const struct aiMesh *mesh, int uvset)
 	glEnd();
 }
 
-#ifdef __unix__
+#ifndef NO_X11
 #include <GL/glx.h>
 
 static Display *dpy;
@@ -215,5 +215,4 @@ static void destroy_gl(void)
 		dpy = 0;
 	}
 }
-
 #endif
