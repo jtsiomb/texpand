@@ -43,8 +43,9 @@ Usage
 ```
 Usage: ./texpand [options] <texture file>
 Options:
-   -o <fname>: specify output filename
-   -uvset <n>: specify which UV set to use (default: 0)
+   -o <fname>: output filename
+   -uvset <n>: which UV set to use for mask generation (default: 0)
+   -radius <n>: maximum expansion radius in pixels
    -force, -f: use all meshes in mask gen. without matching the texture filename
    -genmask: output the texture usage mask
    -mesh <fname>: use mesh/scene file for generating the texture usage mask
@@ -53,6 +54,7 @@ Options:
    -usage, -u: calculate and print texture space utilization [0, 1]
    -help, -h: print usage information and exit
  (exactly one of -mesh, -mask, or -maskalpha must be specified).
+
 ```
 
 Issues

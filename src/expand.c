@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include <imago2.h>
 
-static int find_nearest(int x, int y, struct img_pixmap *mask, int *resx, int *resy);
+static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int *resx, int *resy);
 
-int expand(struct img_pixmap *res, struct img_pixmap *img, struct img_pixmap *mask)
+int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img, struct img_pixmap *mask)
 {
 	int i, width = res->width;
 
@@ -42,10 +42,7 @@ int expand(struct img_pixmap *res, struct img_pixmap *img, struct img_pixmap *ma
 				int nx, ny;
 				float *src;
 
-				if(!find_nearest(j, i, mask, &nx, &ny)) {
-					if(i == 0) {
-						fprintf(stderr, "expand failed, empty mask?\n");
-					}
+				if(!find_nearest(j, i, mask, max_dist, &nx, &ny)) {
 					break;
 				}
 
@@ -84,18 +81,20 @@ static int pixoffs(int dist, int idx, int *resx, int *resy)
 	return abs(dx) + abs(dy);	/* return manhattan distance */
 }
 
-static int find_nearest(int x, int y, struct img_pixmap *mask, int *resx, int *resy)
+static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int *resx, int *resy)
 {
-	int i, j, max_xoffs, max_yoffs, max_offs;
+	int i, j, max_xoffs, max_yoffs;
 	int mindist = INT_MAX;
 	int minx = -1, miny = -1;
 	unsigned char *maskpix = mask->pixels;
 
-	max_xoffs = x > mask->width / 2 ? x : mask->width - x;
-	max_yoffs = y > mask->height / 2 ? y : mask->height - y;
-	max_offs = max_xoffs > max_yoffs ? max_xoffs : max_yoffs;
+	if(max_dist <= 0) {
+		max_xoffs = x > mask->width / 2 ? x : mask->width - x;
+		max_yoffs = y > mask->height / 2 ? y : mask->height - y;
+		max_dist = max_xoffs > max_yoffs ? max_xoffs : max_yoffs;
+	}
 
-	for(i=1; i<max_offs; i++) {
+	for(i=1; i<max_dist; i++) {
 		int npix = i * 8;
 
 		for(j=0; j<npix; j++) {

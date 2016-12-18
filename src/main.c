@@ -25,7 +25,7 @@ int mask_from_scene(struct img_pixmap *mask, int xsz, int ysz, const char *fname
 		int uvset, const char *filter);
 
 /* in expand.c */
-int expand(struct img_pixmap *res, struct img_pixmap *img, struct img_pixmap *mask);
+int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img, struct img_pixmap *mask);
 
 static int mask_from_alpha(struct img_pixmap *mask, struct img_pixmap *img);
 static float calc_usage(struct img_pixmap *mask);
@@ -40,6 +40,7 @@ int opt_force;		/* force using all meshes regardless of texture filename matchin
 int opt_genmask;	/* just generate usage mask */
 int opt_maskalpha;	/* use alpha channel as usage mask */
 int opt_usage;		/* just print usage percentage */
+int opt_radius = -1;/* how much to expand (negative values signify infinite expansion) */
 
 static struct img_pixmap img;
 
@@ -115,7 +116,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to allocate result image\n");
 		return 1;
 	}
-	expand(&res, &img, &mask);
+	expand(&res, opt_radius, &img, &mask);
 	if(img_save(&res, opt_out_fname) == -1) {
 		fprintf(stderr, "failed to write output file: %s\n", opt_out_fname);
 		return 1;
@@ -146,8 +147,9 @@ static void print_usage(const char *progname, FILE *fp)
 {
 	fprintf(fp, "Usage: %s [options] <texture file>\n", progname);
 	fprintf(fp, "Options:\n");
-	fprintf(fp, "   -o <fname>: specify output filename\n");
-	fprintf(fp, "   -uvset <n>: specify which UV set to use (default: 0)\n");
+	fprintf(fp, "   -o <fname>: output filename\n");
+	fprintf(fp, "   -uvset <n>: which UV set to use for mask generation (default: 0)\n");
+	fprintf(fp, "   -radius <n>: maximum expansion radius in pixels\n");
 	fprintf(fp, "   -force, -f: use all meshes in mask gen. without matching the texture filename\n");
 	fprintf(fp, "   -genmask: output the texture usage mask\n");
 	fprintf(fp, "   -mesh <fname>: use mesh/scene file for generating the texture usage mask\n");
@@ -176,6 +178,14 @@ static int parse_args(int argc, char **argv)
 				opt_uvset = strtol(argv[++i], &endp, 10);
 				if(*endp) {
 					fprintf(stderr, "-uvset must be followed by a number\n");
+					return -1;
+				}
+
+			} else if(strcmp(argv[i], "-radius") == 0) {
+				char *endp;
+				opt_radius = strtol(argv[++i], &endp, 10);
+				if(*endp) {
+					fprintf(stderr, "-radius must be followed by a number\n");
 					return -1;
 				}
 
