@@ -21,6 +21,10 @@ private:
 	struct img_pixmap *in_tex;
 	struct img_pixmap *out_tex;
 
+	void op_genmask_active(bool st);
+	void op_savemask_active(bool st);
+	void op_expand_active(bool st);
+
 public:
 	explicit MainWin(QWidget *parent = 0);
 	~MainWin();

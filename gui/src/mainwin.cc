@@ -10,9 +10,10 @@
 #include "ui_mainwin.h"
 #include "genmask.h"
 
+#define IMAGES_SUFFIX_FILTER	"Images (*.png *.jpg *.jpeg *.tga *.ppm)"
 #define IMAGE_VALID(img) (img && img->pixels && img->width > 0 && img->height > 0)
 
-static void update_image_widget(QLabel *w, struct img_pixmap *img);
+static bool update_image_widget(QLabel *w, struct img_pixmap *img);
 
 static int pfd[2];
 
@@ -93,11 +94,12 @@ void MainWin::on_bn_gen_mask_clicked()
 
 	update_image_widget(ui->img_mask, mask);
 	ui->bn_expand->setEnabled(true);
+	ui->bn_save_mask->setEnabled(true);
 }
 
 void MainWin::on_bn_seltex_clicked()
 {
-	QString fname = QFileDialog::getOpenFileName(this, "Open input texture", "Images (*.png *.jpg *.jpeg *.tga *.ppm)");
+	QString fname = QFileDialog::getOpenFileName(this, "Open input texture", QString(), IMAGES_SUFFIX_FILTER);
 	if(!fname.isEmpty()) {
 		const char *cfname = fname.toUtf8().data();
 		if(img_load(in_tex, cfname) == -1 || img_convert(in_tex, IMG_FMT_RGBAF) == -1) {
@@ -110,11 +112,13 @@ void MainWin::on_bn_seltex_clicked()
 
 		if(IMAGE_VALID(mask)) {
 			if(mask->width == in_tex->width && mask->height == in_tex->height) {
-				ui->bn_expand->setEnabled(true);
+				op_expand_active(true);
 			} else {
 				img_destroy(mask);
 				img_init(mask);
 				update_image_widget(ui->img_mask, mask);
+
+				op_expand_active(false);
 			}
 		}
 	}
@@ -123,16 +127,42 @@ void MainWin::on_bn_seltex_clicked()
 void MainWin::on_bn_save_mask_clicked()
 {
 	assert(IMAGE_VALID(mask));
+
+	QString fname = QFileDialog::getSaveFileName(this, "Save mask image", QString(), IMAGES_SUFFIX_FILTER);
+	if(!fname.isEmpty()) {
+		const char *cfname = fname.toUtf8().data();
+		if(img_save(mask, cfname) == -1) {
+			fprintf(stderr, "Failed to save mask image: %s\n", cfname);
+			QMessageBox::critical(this, "Image save error", "Failed to save mask: " + fname);
+			return;
+		} else {
+			printf("Mask saved to: %s\n", cfname);
+		}
+	}
 }
 
+void MainWin::op_genmask_active(bool st)
+{
+	ui->bn_gen_mask->setEnabled(st);
+}
 
-static void update_image_widget(QLabel *w, struct img_pixmap *img)
+void MainWin::op_savemask_active(bool st)
+{
+	ui->bn_save_mask->setEnabled(st);
+}
+
+void MainWin::op_expand_active(bool st)
+{
+	ui->bn_expand->setEnabled(st);
+}
+
+static bool update_image_widget(QLabel *w, struct img_pixmap *img)
 {
 	struct img_pixmap tmp;
 
 	if(!IMAGE_VALID(img)) {
 		w->setPixmap(QPixmap());
-		return;
+		return false;
 	}
 
 	img_init(&tmp);
@@ -155,10 +185,11 @@ static void update_image_widget(QLabel *w, struct img_pixmap *img)
 		break;
 	default:
 		fprintf(stderr, "update_image_widget: unsupported pixmap format!\n");
-		return;
+		return false;
 	}
 
 	QImage qimg((unsigned char*)img->pixels, img->width, img->height, qfmt);
 	w->setPixmap(QPixmap::fromImage(qimg));
 	img_destroy(&tmp);
+	return true;
 }
