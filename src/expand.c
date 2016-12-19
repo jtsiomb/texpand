@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits.h>
 #include <assert.h>
 #include <imago2.h>
+#include "expand.h"
 
 static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int *resx, int *resy);
 

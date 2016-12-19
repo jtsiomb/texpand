@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <assimp/mesh.h>
 #include <assimp/material.h>
 #include <assimp/vector3.h>
+#include "genmask.h"
 
 static int uses_texture(const struct aiScene *scn, const struct aiMesh *mesh, const char *texname);
 
@@ -35,15 +36,39 @@ static void draw_uvmesh(const struct aiMesh *mesh, int uvset);
 int mask_from_scene(struct img_pixmap *mask, int xsz, int ysz, const char *fname,
 		int uvset, const char *filter)
 {
-	int i;
-	const struct aiScene *scn;
-	unsigned int ppflags = aiProcess_Triangulate | aiProcess_SortByPType |
-		aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_FlipUVs;
-
-	if(!(scn = aiImportFile(fname, ppflags))) {
-		fprintf(stderr, "failed to load scene file: %s\n", fname);
+	int res;
+	struct aiScene *scn = load_scene(fname);
+	if(!scn) {
 		return -1;
 	}
+
+	res = gen_mask(mask, xsz, ysz, scn, uvset, filter);
+	free_scene(scn);
+	return res;
+}
+
+struct aiScene *load_scene(const char *fname)
+{
+	static const unsigned int ppflags = aiProcess_Triangulate | aiProcess_SortByPType |
+		aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_FlipUVs;
+	struct aiScene *scn;
+
+	if(!(scn = (struct aiScene*)aiImportFile(fname, ppflags))) {
+		fprintf(stderr, "failed to load scene file: %s\n", fname);
+		return 0;
+	}
+	return scn;
+}
+
+void free_scene(struct aiScene *scn)
+{
+	aiReleaseImport(scn);
+}
+
+int gen_mask(struct img_pixmap *mask, int xsz, int ysz, struct aiScene *scn,
+		int uvset, const char *filter)
+{
+	int i;
 
 	if(img_set_pixels(mask, xsz, ysz, IMG_FMT_GREY8, 0) == -1) {
 		fprintf(stderr, "failed to allocate mask image\n");
@@ -71,7 +96,6 @@ int mask_from_scene(struct img_pixmap *mask, int xsz, int ysz, const char *fname
 	glReadPixels(0, 0, xsz, ysz, GL_LUMINANCE, GL_UNSIGNED_BYTE, mask->pixels);
 
 	destroy_gl();
-	aiReleaseImport(scn);
 	return 0;
 }
 

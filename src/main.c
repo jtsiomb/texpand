@@ -19,13 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <imago2.h>
-
-/* in genmask.c */
-int mask_from_scene(struct img_pixmap *mask, int xsz, int ysz, const char *fname,
-		int uvset, const char *filter);
-
-/* in expand.c */
-int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img, struct img_pixmap *mask);
+#include "genmask.h"
+#include "expand.h"
 
 static int mask_from_alpha(struct img_pixmap *mask, struct img_pixmap *img);
 static float calc_usage(struct img_pixmap *mask);
