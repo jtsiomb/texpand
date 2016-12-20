@@ -10,10 +10,10 @@
 #include "ui_mainwin.h"
 #include "genmask.h"
 
-#define IMAGES_SUFFIX_FILTER	"Images (*.png *.jpg *.jpeg *.tga *.ppm)"
+#define IMAGES_SUFFIX_FILTER "Images (*.png *.jpg *.jpeg *.tga *.ppm)"
 #define IMAGE_VALID(img) (img && img->pixels && img->width > 0 && img->height > 0)
 
-static bool update_image_widget(QLabel *w, struct img_pixmap *img);
+static bool update_image_widget(QGraphicsView *gview, struct img_pixmap *img);
 
 static int pfd[2];
 
@@ -27,6 +27,10 @@ MainWin::MainWin(QWidget *parent)
 	in_tex = img_create();
 	out_tex = img_create();
 	mask = img_create();
+
+	ui->gview_input->setScene(new QGraphicsScene);
+	ui->gview_output->setScene(new QGraphicsScene);
+	ui->gview_mask->setScene(new QGraphicsScene);
 
 	// redirect stdout/stderr to the log output widget
 	pipe(pfd);
@@ -42,6 +46,10 @@ MainWin::MainWin(QWidget *parent)
 
 MainWin::~MainWin()
 {
+	delete ui->gview_input->scene();
+	delete ui->gview_output->scene();
+	delete ui->gview_mask->scene();
+
 	delete ui;
 	delete sock_notifier;
 
@@ -51,6 +59,7 @@ MainWin::~MainWin()
 	if(mask) img_free(mask);
 }
 
+// --- slots ---
 void MainWin::socket_readable(int s)
 {
 	int sz;
@@ -71,8 +80,8 @@ void MainWin::on_bn_selmesh_clicked()
 		scn = new_scn;
 
 		ui->tx_meshfile->setText(fname);
-		ui->bn_gen_mask->setEnabled(true);
 		ui->spin_uvset->setEnabled(true);
+		precond_genmask();
 	}
 }
 
@@ -92,11 +101,12 @@ void MainWin::on_bn_gen_mask_clicked()
 		return;
 	}
 
-	update_image_widget(ui->img_mask, mask);
-	ui->bn_expand->setEnabled(true);
-	ui->bn_save_mask->setEnabled(true);
+	update_image_widget(ui->gview_mask, mask);
+	precond_expand();
+	precond_savemask();
 }
 
+// select input texture button
 void MainWin::on_bn_seltex_clicked()
 {
 	QString fname = QFileDialog::getOpenFileName(this, "Open input texture", QString(), IMAGES_SUFFIX_FILTER);
@@ -108,19 +118,17 @@ void MainWin::on_bn_seltex_clicked()
 			return;
 		}
 
-		update_image_widget(ui->img_input, in_tex);
+		update_image_widget(ui->gview_input, in_tex);
 
 		if(IMAGE_VALID(mask)) {
-			if(mask->width == in_tex->width && mask->height == in_tex->height) {
-				op_expand_active(true);
-			} else {
+			if(mask->width != in_tex->width && mask->height != in_tex->height) {
 				img_destroy(mask);
 				img_init(mask);
-				update_image_widget(ui->img_mask, mask);
-
-				op_expand_active(false);
+				update_image_widget(ui->gview_mask, mask);
 			}
 		}
+		precond_genmask();
+		precond_expand();
 	}
 }
 
@@ -141,27 +149,38 @@ void MainWin::on_bn_save_mask_clicked()
 	}
 }
 
-void MainWin::op_genmask_active(bool st)
+void MainWin::on_bn_expand_clicked()
 {
-	ui->bn_gen_mask->setEnabled(st);
 }
 
-void MainWin::op_savemask_active(bool st)
+// --- private ---
+void MainWin::precond_genmask()
 {
-	ui->bn_save_mask->setEnabled(st);
+	ui->bn_gen_mask->setEnabled(IMAGE_VALID(in_tex) && scn);
 }
 
-void MainWin::op_expand_active(bool st)
+void MainWin::precond_savemask()
 {
-	ui->bn_expand->setEnabled(st);
+	ui->bn_save_mask->setEnabled(IMAGE_VALID(mask));
 }
 
-static bool update_image_widget(QLabel *w, struct img_pixmap *img)
+void MainWin::precond_expand()
+{
+	ui->bn_expand->setEnabled(IMAGE_VALID(mask) && IMAGE_VALID(in_tex));
+}
+
+void MainWin::precond_save_expanded()
+{
+	ui->bn_save_exp->setEnabled(IMAGE_VALID(out_tex));
+}
+
+// --- static ---
+static bool update_image_widget(QGraphicsView *gview, struct img_pixmap *img)
 {
 	struct img_pixmap tmp;
 
 	if(!IMAGE_VALID(img)) {
-		w->setPixmap(QPixmap());
+		gview->scene()->clear();
 		return false;
 	}
 
@@ -189,7 +208,18 @@ static bool update_image_widget(QLabel *w, struct img_pixmap *img)
 	}
 
 	QImage qimg((unsigned char*)img->pixels, img->width, img->height, qfmt);
-	w->setPixmap(QPixmap::fromImage(qimg));
+
+	QGraphicsScene *gs = gview->scene();
+	gs->clear();
+	gs->addPixmap(QPixmap::fromImage(qimg));
+
 	img_destroy(&tmp);
+
+	// calculate a scaling factor to fit the image in the view
+	float sx = (float)gview->rect().width() / gs->sceneRect().width();
+	float sy = (float)gview->rect().height() / gs->sceneRect().height();
+	float s = sx < sy ? sx : sy;
+	gview->resetTransform();
+	gview->scale(s, s);
 	return true;
 }

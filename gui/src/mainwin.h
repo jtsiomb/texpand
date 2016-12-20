@@ -21,9 +21,10 @@ private:
 	struct img_pixmap *in_tex;
 	struct img_pixmap *out_tex;
 
-	void op_genmask_active(bool st);
-	void op_savemask_active(bool st);
-	void op_expand_active(bool st);
+	void precond_genmask();
+	void precond_savemask();
+	void precond_expand();
+	void precond_save_expanded();
 
 public:
 	explicit MainWin(QWidget *parent = 0);
@@ -35,6 +36,7 @@ private slots:
 	void on_bn_gen_mask_clicked();
 	void on_bn_seltex_clicked();
 	void on_bn_save_mask_clicked();
+	void on_bn_expand_clicked();
 };
 
 #endif // MAINWIN_H
