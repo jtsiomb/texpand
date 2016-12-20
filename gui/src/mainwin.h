@@ -30,6 +30,9 @@ public:
 	explicit MainWin(QWidget *parent = 0);
 	~MainWin();
 
+	void expand_progress(float p);
+	void expand_done();
+
 private slots:
 	void socket_readable(int s);
 	void on_bn_selmesh_clicked();

@@ -26,6 +26,12 @@ static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int
 
 int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img, struct img_pixmap *mask)
 {
+	return expand_scanlines(res, 0, img->height, max_dist, img, mask);
+}
+
+
+int expand_scanlines(struct img_pixmap *res, int ystart, int ycount, int max_dist, struct img_pixmap *img, struct img_pixmap *mask)
+{
 	int i, width = res->width;
 
 	assert(img->fmt == IMG_FMT_RGBAF);
@@ -33,17 +39,17 @@ int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img, struct 
 	assert(mask->fmt == IMG_FMT_GREY8);
 
 #pragma omp parallel for schedule(dynamic)
-	for(i=0; i<res->height; i++) {
-		int j;
-		unsigned char *maskptr = (unsigned char*)mask->pixels + i * width;
-		float *dest = (float*)res->pixels + i * width * 4;
+	for(i=0; i<ycount; i++) {
+		int j, y = i + ystart;
+		unsigned char *maskptr = (unsigned char*)mask->pixels + y * width;
+		float *dest = (float*)res->pixels + y * width * 4;
 
 		for(j=0; j<res->width; j++) {
 			if(*maskptr != 0xff) {
 				int nx, ny;
 				float *src;
 
-				if(!find_nearest(j, i, mask, max_dist, &nx, &ny)) {
+				if(!find_nearest(j, y, mask, max_dist, &nx, &ny)) {
 					break;
 				}
 

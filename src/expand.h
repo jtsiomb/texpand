@@ -27,6 +27,9 @@ extern "C" {
 int expand(struct img_pixmap *res, int max_dist, struct img_pixmap *img,
 		struct img_pixmap *mask);
 
+int expand_scanlines(struct img_pixmap *res, int y, int ycount, int max_dist,
+		struct img_pixmap *img, struct img_pixmap *mask);
+
 #ifdef __cplusplus
 }
 #endif

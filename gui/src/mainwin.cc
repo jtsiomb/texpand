@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <thread>
 #include <unistd.h>
 #include <fcntl.h>
 #include <imago2.h>
@@ -9,6 +10,7 @@
 #include "mainwin.h"
 #include "ui_mainwin.h"
 #include "genmask.h"
+#include "expand.h"
 
 #define IMAGES_SUFFIX_FILTER "Images (*.png *.jpg *.jpeg *.tga *.ppm)"
 #define IMAGE_VALID(img) (img && img->pixels && img->width > 0 && img->height > 0)
@@ -149,8 +151,72 @@ void MainWin::on_bn_save_mask_clicked()
 	}
 }
 
+struct ExpandData {
+	img_pixmap *input, *output, *mask;
+	int radius;
+	MainWin *win;
+	bool cancel;
+} expand_data;
+
+#define BLOCKSZ	32
+
+static void thread_func()
+{
+	int height = expand_data.input->height;
+	int idx = 0;
+	while(idx < height) {
+		if(expand_data.cancel) {
+			break;
+		}
+		expand_data.win->expand_progress((float)idx / (float)height);
+		int ysz = std::min(height - idx, BLOCKSZ);
+		expand_scanlines(expand_data.output, idx, ysz, expand_data.radius,
+				expand_data.input, expand_data.mask);
+		idx += ysz;
+	}
+	expand_data.win->expand_done();
+}
+
+void MainWin::expand_progress(float p)
+{
+	ui->progr_expand->setValue((int)(p * 100.0f));
+}
+
+void MainWin::expand_done()
+{
+	ui->progr_expand->setValue(100);
+	ui->progr_expand->setEnabled(false);
+	ui->bn_expand->setText("Expand");
+
+	expand_data.input = 0;
+	if(!expand_data.cancel) {
+		update_image_widget(ui->gview_output, out_tex);
+		precond_save_expanded();
+	}
+}
+
 void MainWin::on_bn_expand_clicked()
 {
+	if(!expand_data.input) {
+		ui->bn_expand->setText("Stop");
+		ui->progr_expand->setValue(0);
+		ui->progr_expand->setEnabled(true);
+
+		expand_data.input = in_tex;
+		expand_data.output = out_tex;
+		expand_data.mask = mask;
+		expand_data.radius = ui->chk_rad_inf->isChecked() ? -1 : ui->spin_radius->value();
+		expand_data.win = this;
+		expand_data.cancel = false;
+
+		printf("expanding image %dx%d\n", in_tex->width, in_tex->height);
+
+		img_copy(out_tex, in_tex);
+		std::thread thr{thread_func};
+		thr.detach();
+	} else {
+		expand_data.cancel = true;
+	}
 }
 
 // --- private ---
