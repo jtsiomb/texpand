@@ -7,6 +7,7 @@
 #include <imago2.h>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QThread>
 #include "mainwin.h"
 #include "ui_mainwin.h"
 #include "genmask.h"
@@ -41,9 +42,14 @@ MainWin::MainWin(QWidget *parent)
 	dup2(pfd[1], 1);
 	dup2(pfd[1], 2);
 
+	setvbuf(stdout, 0, _IONBF, 0);
+
 	fcntl(pfd[0], F_SETFL, fcntl(pfd[0], F_GETFL) | O_NONBLOCK);
 	sock_notifier = new QSocketNotifier(pfd[0], QSocketNotifier::Read);
 	connect(sock_notifier, &QSocketNotifier::activated, this, &MainWin::socket_readable);
+
+	connect(this, &MainWin::sig_expand_progress, this, &MainWin::expand_progress);
+	connect(this, &MainWin::sig_expand_done, this, &MainWin::expand_done);
 }
 
 MainWin::~MainWin()
@@ -151,6 +157,23 @@ void MainWin::on_bn_save_mask_clicked()
 	}
 }
 
+void MainWin::on_bn_save_exp_clicked()
+{
+	assert(IMAGE_VALID(out_tex));
+
+	QString fname = QFileDialog::getSaveFileName(this, "Save expanded image", QString(), IMAGES_SUFFIX_FILTER);
+	if(!fname.isEmpty()) {
+		const char *cfname = fname.toUtf8().data();
+		if(img_save(out_tex, cfname) == -1) {
+			fprintf(stderr, "Failed to save expanded image: %s\n", cfname);
+			QMessageBox::critical(this, "Image save error", "Failed to save expanded image: " + fname);
+			return;
+		} else {
+			printf("Expanded image saved to: %s\n", cfname);
+		}
+	}
+}
+
 struct ExpandData {
 	img_pixmap *input, *output, *mask;
 	int radius;
@@ -168,13 +191,13 @@ static void thread_func()
 		if(expand_data.cancel) {
 			break;
 		}
-		expand_data.win->expand_progress((float)idx / (float)height);
+		emit expand_data.win->sig_expand_progress((float)idx / (float)height);
 		int ysz = std::min(height - idx, BLOCKSZ);
 		expand_scanlines(expand_data.output, idx, ysz, expand_data.radius,
 				expand_data.input, expand_data.mask);
 		idx += ysz;
 	}
-	expand_data.win->expand_done();
+	emit expand_data.win->sig_expand_done();
 }
 
 void MainWin::expand_progress(float p)

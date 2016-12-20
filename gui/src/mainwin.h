@@ -30,16 +30,21 @@ public:
 	explicit MainWin(QWidget *parent = 0);
 	~MainWin();
 
+signals:
+	void sig_expand_progress(float p);
+	void sig_expand_done();
+
+private slots:
 	void expand_progress(float p);
 	void expand_done();
 
-private slots:
 	void socket_readable(int s);
 	void on_bn_selmesh_clicked();
 	void on_bn_gen_mask_clicked();
 	void on_bn_seltex_clicked();
 	void on_bn_save_mask_clicked();
 	void on_bn_expand_clicked();
+	void on_bn_save_exp_clicked();
 };
 
 #endif // MAINWIN_H
