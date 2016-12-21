@@ -16,3 +16,11 @@ SOURCES += ../src/genmask.c ../src/expand.c
 LIBS += -lassimp -limago -lX11 -lgomp
 
 INCLUDEPATH += ../src
+
+isEmpty(PREFIX) {
+	PREFIX = /usr/local
+}
+
+target.path = $$PREFIX/bin
+target.files += $$TARGET
+INSTALLS += target
