@@ -6,3 +6,11 @@
 *.fbx
 *.obj
 texpand
+texpand-gui
+.qmake.stash
+*Debug/
+*Release/
+moc_*
+ui_mainwin.h
+*.user
+gui/Makefile

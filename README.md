@@ -17,6 +17,12 @@ Finally, `texpand` may also be used to calculate the percentage of used space in
 a texture image, which can be useful to issue automated warnings during asset
 builds, for inefficient use of texture storage.
 
+In addition to the command-line program, which is suitable for inclusion in
+content pipelines, there is also a GUI version, imaginatively called
+`texpand-gui`, which might be handy for interactive use and experimentation.
+
+![gui shot](http://nuclear.mutantstargoat.com/sw/texpand/img/texpand-gui_shot-thumb.jpg)
+
 License
 -------
 Copyright (C) 2016 John Tsiombikas <nuclear@member.fsf.org>
@@ -26,8 +32,8 @@ under the terms of the GNU General Public License version 3, or at your option
 any later version published by the Free Software Foundation. See COPYING for
 details.
 
-Build instructions
-------------------
+Build instructions (texpand)
+----------------------------
 `texpand` depends on the following libraries, which need to be installed
 system-wide before building:
 
@@ -37,6 +43,14 @@ system-wide before building:
 Simply type `make` to build, and optionally `make install` to install `texpand`.
 If you don't want to install to the default prefix (which is `/usr/local`),
 make sure to modify the first line of the `Makefile`.
+
+Build instructions (texpand-gui)
+--------------------------------
+In addition to the above, `texpand-gui` also requires Qt 5.x to be installed
+before building.
+
+Change into the `gui` subdirectory of the project, and type `qmake && make`.
+Install as usual, by running `make install`.
 
 Usage
 -----
