@@ -45,6 +45,7 @@ private slots:
 	void on_bn_save_mask_clicked();
 	void on_bn_expand_clicked();
 	void on_bn_save_exp_clicked();
+	void on_bn_selmask_clicked();
 };
 
 #endif // MAINWIN_H

@@ -112,6 +112,7 @@ void MainWin::on_bn_gen_mask_clicked()
 	update_image_widget(ui->gview_mask, mask);
 	precond_expand();
 	precond_savemask();
+	ui->lb_maskfile->setText("<N/A>");
 }
 
 // select input texture button
@@ -137,6 +138,36 @@ void MainWin::on_bn_seltex_clicked()
 		}
 		precond_genmask();
 		precond_expand();
+		ui->tx_intexfile->setText(fname);
+	}
+}
+
+void MainWin::on_bn_selmask_clicked()
+{
+	QString fname = QFileDialog::getOpenFileName(this, "Open mask image", QString(), IMAGES_SUFFIX_FILTER);
+	if(!fname.isEmpty()) {
+		const char *cfname = fname.toUtf8().data();
+		if(img_load(mask, cfname) == -1 || img_convert(mask, IMG_FMT_GREY8) == -1) {
+			fprintf(stderr, "Failed to load mask: %s\n", cfname);
+			QMessageBox::critical(this, "Image loading error", "Failed to load mask: " + fname);
+			return;
+		}
+
+		if(IMAGE_VALID(in_tex)) {
+			if(mask->width != in_tex->width && mask->height != in_tex->height) {
+				char buf[128];
+				sprintf(buf, "Selected mask file's dimensions (%dx%d) differ from input texture (%dx%d)\n",
+						mask->width, mask->height, in_tex->width, in_tex->height);
+				QMessageBox::critical(this, "Mask loading error", buf);
+				fputs(buf, stderr);
+
+				img_destroy(mask);
+				img_init(mask);
+			}
+		}
+		update_image_widget(ui->gview_mask, mask);
+		precond_expand();
+		ui->lb_maskfile->setText(fname);
 	}
 }
 
