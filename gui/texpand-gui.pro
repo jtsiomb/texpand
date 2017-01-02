@@ -15,15 +15,17 @@ FORMS += ui/mainwin.ui
 # backend
 QMAKE_CFLAGS += -fopenmp
 SOURCES += ../src/genmask.c ../src/expand.c
-LIBS += -lassimp -limago -lX11 -lgomp
+INCLUDEPATH += /usr/local/include
+LIBS += -L/usr/local/lib -lassimp -limago -lgomp -lz -lpng -ljpeg
 
 unix {
-	SOURCES += src/glctx_x11.c
-	QMAKE_CFLAGS += -DUSE_GLX
+        SOURCES += ../src/glctx_x11.c
+        DEFINES += USE_GLX
+        LIBS += -lX11
 }
 win32 {
-	SOURCES += src/glctx_w32.c
-	QMAKE_CFLAGS += -DUSE_WGL
+        SOURCES += ../src/glctx_w32.c
+        DEFINES += USE_WGL
 }
 
 INCLUDEPATH += src ../src

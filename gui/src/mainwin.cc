@@ -35,7 +35,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static bool update_image_widget(QGraphicsView *gview, struct img_pixmap *img);
 
+#if defined(__unix__) || defined(__APPLE__)
 static int pfd[2];
+#endif
 
 MainWin::MainWin(QWidget *parent)
 	: QMainWindow(parent)
@@ -52,7 +54,8 @@ MainWin::MainWin(QWidget *parent)
 	ui->gview_output->setScene(new QGraphicsScene);
 	ui->gview_mask->setScene(new QGraphicsScene);
 
-	// redirect stdout/stderr to the log output widget
+#if defined(__unix__) || defined(__APPLE__)
+    // redirect stdout/stderr to the log output widget
 	pipe(pfd);
 	::close(1);
 	::close(2);
@@ -64,6 +67,9 @@ MainWin::MainWin(QWidget *parent)
 	fcntl(pfd[0], F_SETFL, fcntl(pfd[0], F_GETFL) | O_NONBLOCK);
 	sock_notifier = new QSocketNotifier(pfd[0], QSocketNotifier::Read);
 	connect(sock_notifier, &QSocketNotifier::activated, this, &MainWin::socket_readable);
+#else
+    sock_notifier = 0;
+#endif
 
 	connect(this, &MainWin::sig_expand_progress, this, &MainWin::expand_progress);
 	connect(this, &MainWin::sig_expand_done, this, &MainWin::expand_done);
