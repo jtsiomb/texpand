@@ -5,8 +5,17 @@ obj = $(src:.c=.o)
 dep = $(obj:.o=.d)
 bin = texpand
 
-CFLAGS = -pedantic -Wall -g -O3 -fopenmp
-LDFLAGS = -lGL -lassimp -lX11 -limago -lgomp
+CFLAGS = -pedantic -Wall -I/usr/local/include -g -O3 -fopenmp
+LDFLAGS = -L/usr/local/lib $(libgl) -lassimp -limago -lgomp -lpng -lz -ljpeg
+
+ifeq ($(shell uname -s | sed 's/MINGW32.*/MINGW32/'), MINGW32)
+	libgl = -lopengl32 -lgdi32
+	CFLAGS += -DUSE_WGL
+else
+	libgl = -lGL -lX11
+	CFLAGS += -DUSE_GLX
+endif
+
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)

@@ -17,6 +17,15 @@ QMAKE_CFLAGS += -fopenmp
 SOURCES += ../src/genmask.c ../src/expand.c
 LIBS += -lassimp -limago -lX11 -lgomp
 
+unix {
+	SOURCES += src/glctx_x11.c
+	QMAKE_CFLAGS += -DUSE_GLX
+}
+win32 {
+	SOURCES += src/glctx_w32.c
+	QMAKE_CFLAGS += -DUSE_WGL
+}
+
 INCLUDEPATH += src ../src
 
 isEmpty(PREFIX) {
