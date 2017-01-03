@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 static int mask_from_alpha(struct img_pixmap *mask, struct img_pixmap *img);
 static float calc_usage(struct img_pixmap *mask);
 static int parse_args(int argc, char **argv);
+static void print_progress(int percent);
 
 const char *opt_out_fname = "out.png";
 const char *opt_tex_fname;
@@ -36,6 +37,7 @@ int opt_genmask;	/* just generate usage mask */
 int opt_maskalpha;	/* use alpha channel as usage mask */
 int opt_usage;		/* just print usage percentage */
 int opt_radius = -1;/* how much to expand (negative values signify infinite expansion) */
+int opt_silent;		/* don't print progress while expanding */
 
 static struct img_pixmap img;
 
@@ -111,7 +113,24 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to allocate result image\n");
 		return 1;
 	}
-	expand(&res, opt_radius, &img, &mask);
+
+	if(opt_silent) {
+		expand(&res, opt_radius, &img, &mask);
+	} else {
+		int height = img.height;
+		int idx = 0;
+		while(idx < height) {
+			int ysz = height - idx;
+			if(ysz > 32) ysz = 32;
+			printf("expanding %dx%d: ", img.width, img.height);
+			print_progress(idx * 100 / height);
+			expand_scanlines(&res, idx, ysz, opt_radius, &img, &mask);
+			idx += ysz;
+		}
+		printf("expanding %dx%d: ", img.width, img.height);
+		print_progress(100);
+		putchar('\n');
+	}
 	if(img_save(&res, opt_out_fname) == -1) {
 		fprintf(stderr, "failed to write output file: %s\n", opt_out_fname);
 		return 1;
@@ -151,6 +170,7 @@ static void print_usage(const char *progname, FILE *fp)
 	fprintf(fp, "   -mask <fname>: use a mask file instead of generating it from geometry mesh\n");
 	fprintf(fp, "   -maskalpha: use alpha channel as the usage mask\n");
 	fprintf(fp, "   -usage, -u: calculate and print texture space utilization [0, 1]\n");
+	fprintf(fp, "   -silent, -s: don't show progress, or other unnecessary info\n");
 	fprintf(fp, "   -help, -h: print usage information and exit\n");
 	fprintf(fp, " (exactly one of -mesh, -mask, or -maskalpha must be specified).\n");
 }
@@ -210,6 +230,9 @@ static int parse_args(int argc, char **argv)
 			} else if(strcmp(argv[i], "-usage") == 0 || strcmp(argv[i], "-u") == 0) {
 				opt_usage = 1;
 
+			} else if(strcmp(argv[i], "-silent") == 0 || strcmp(argv[i], "-s") == 0) {
+				opt_silent = 1;
+
 			} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
 				print_usage(argv[0], stdout);
 				exit(0);
@@ -238,4 +261,21 @@ static int parse_args(int argc, char **argv)
 	}
 
 	return 0;
+}
+
+static void print_progress(int percent)
+{
+	int i, num = percent * 40 / 100;
+	printf("%3d%% [", percent);
+	for(i=0; i<40; i++) {
+		if(i < num) {
+			putchar('=');
+		} else if(i == num) {
+			putchar('>');
+		} else {
+			putchar(' ');
+		}
+	}
+	printf("]\r");
+	fflush(stdout);
 }
