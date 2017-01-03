@@ -1,6 +1,6 @@
 /*
 texpand - Texture pre-processing tool for expanding texels, to avoid filtering artifacts.
-Copyright (C) 2016  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2016-2017  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -65,66 +65,79 @@ int expand_scanlines(struct img_pixmap *res, int ystart, int ycount, int max_dis
 	return 0;
 }
 
-/* calculates the offset (dx, dy) of the idx'th point around the origin on
- * the dist'th ring, and returns the coordinates and its manhattan distance
- */
-static int pixoffs(int dist, int idx, int *resx, int *resy)
-{
-	int dx, dy;
-	int side_len = dist * 2;
-	int side = idx / side_len;
-	int sidx = idx % side_len;
-
-	if(side & 1) { /* odd sides are vertical, swap dx<->dy */
-		dy = sidx - dist;
-		dx = dist;
-	} else {
-		dx = sidx - dist;
-		dy = dist;
-	}
-
-	*resx = side >= 2 ? -dx : dx;	/* last two sides are increasing in reverse ... I guess */
-	*resy = side == 1 || side == 2 ? -dy : dy;	/* fuck it... just draw the diagram ... */
-	return abs(dx) + abs(dy);	/* return manhattan distance */
-}
+#define GET_PIXEL(mask, x, y) (((unsigned char*)(mask)->pixels)[(y) * (mask)->width + (x)])
 
 static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int *resx, int *resy)
 {
-	int i, j, max_xoffs, max_yoffs;
-	int mindist = INT_MAX;
-	int minx = -1, miny = -1;
-	unsigned char *maskpix = mask->pixels;
+	int i, j, startx, starty, endx, endy, px, py, min_px = -1, min_py;
+	int min_distsq = INT_MAX;
+	int bwidth, bheight;
 
-	if(max_dist <= 0) {
-		max_xoffs = x > mask->width / 2 ? x : mask->width - x;
-		max_yoffs = y > mask->height / 2 ? y : mask->height - y;
-		max_dist = max_xoffs > max_yoffs ? max_xoffs : max_yoffs;
+	startx = x >= max_dist ? x - max_dist : 0;
+	starty = y >= max_dist ? y - max_dist : 0;
+	endx = x + max_dist < mask->width ? x + max_dist : mask->width - 1;
+	endy = y + max_dist < mask->height ? y + max_dist : mask->height - 1;
+
+	/* try the cardinal directions first to find the search bounding box */
+	for(i=0; i<4; i++) {
+		int max_dist = x - startx;
+		for(j=0; j<max_dist; j++) {
+			if(GET_PIXEL(mask, x - j, y) == 0xff) {
+				startx = x - j;
+				break;
+			}
+		}
+		max_dist = endx + 1 - x;
+		for(j=0; j<max_dist; j++) {
+			if(GET_PIXEL(mask, x + j, y) == 0xff) {
+				endx = x + j;
+				break;
+			}
+		}
+		max_dist = y - starty;
+		for(j=0; j<max_dist; j++) {
+			if(GET_PIXEL(mask, x, y - j) == 0xff) {
+				starty = y - j;
+				break;
+			}
+		}
+		max_dist = endy + 1 - y;
+		for(j=0; j<max_dist; j++) {
+			if(GET_PIXEL(mask, x, y + j) == 0xff) {
+				endy = y + j;
+				break;
+			}
+		}
 	}
 
-	for(i=1; i<max_dist; i++) {
-		int npix = i * 8;
+	/* find the nearest */
+	bwidth = endx + 1 - startx;
+	bheight = endy + 1 - starty;
 
-		for(j=0; j<npix; j++) {
-			int xoffs, yoffs;
-			int dist = pixoffs(i, j, &xoffs, &yoffs);
-			int px = x + xoffs;
-			int py = y + yoffs;
+	py = starty;
+	for(i=0; i<bheight; i++) {
+		px = startx;
+		for(j=0; j<bwidth; j++) {
+			if(GET_PIXEL(mask, px, py) == 0xff) {
+				int dx = px - x;
+				int dy = py - y;
+				int distsq = dx * dx + dy * dy;
 
-			if(px < 0 || px >= mask->width || py < 0 || py >= mask->height) {
-				continue;
+				if(distsq < min_distsq) {
+					min_distsq = distsq;
+					min_px = px;
+					min_py = py;
+				}
 			}
-
-			if(maskpix[py * mask->width + px] == 0xff && dist < mindist) {
-				minx = px;
-				miny = py;
-			}
+			++px;
 		}
+		++py;
+	}
 
-		if(minx != -1) {
-			*resx = minx;
-			*resy = miny;
-			return 1;
-		}
+	if(min_px != -1) {
+		*resx = min_px;
+		*resy = min_py;
+		return 1;
 	}
 	return 0;
 }
