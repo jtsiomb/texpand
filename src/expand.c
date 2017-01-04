@@ -73,40 +73,42 @@ static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int
 	int min_distsq = INT_MAX;
 	int bwidth, bheight;
 
+	if(max_dist <= 0) {
+		max_dist = mask->width > mask->height ? mask->width : mask->height;
+	}
+
 	startx = x >= max_dist ? x - max_dist : 0;
 	starty = y >= max_dist ? y - max_dist : 0;
 	endx = x + max_dist < mask->width ? x + max_dist : mask->width - 1;
 	endy = y + max_dist < mask->height ? y + max_dist : mask->height - 1;
 
 	/* try the cardinal directions first to find the search bounding box */
-	for(i=0; i<4; i++) {
-		int max_dist = x - startx;
-		for(j=0; j<max_dist; j++) {
-			if(GET_PIXEL(mask, x - j, y) == 0xff) {
-				startx = x - j;
-				break;
-			}
+	max_dist = x - startx;
+	for(i=0; i<max_dist; i++) {
+		if(GET_PIXEL(mask, x - i, y) == 0xff) {
+			startx = x - i;
+			break;
 		}
-		max_dist = endx + 1 - x;
-		for(j=0; j<max_dist; j++) {
-			if(GET_PIXEL(mask, x + j, y) == 0xff) {
-				endx = x + j;
-				break;
-			}
+	}
+	max_dist = endx + 1 - x;
+	for(i=0; i<max_dist; i++) {
+		if(GET_PIXEL(mask, x + i, y) == 0xff) {
+			endx = x + i;
+			break;
 		}
-		max_dist = y - starty;
-		for(j=0; j<max_dist; j++) {
-			if(GET_PIXEL(mask, x, y - j) == 0xff) {
-				starty = y - j;
-				break;
-			}
+	}
+	max_dist = y - starty;
+	for(i=0; i<max_dist; i++) {
+		if(GET_PIXEL(mask, x, y - i) == 0xff) {
+			starty = y - i;
+			break;
 		}
-		max_dist = endy + 1 - y;
-		for(j=0; j<max_dist; j++) {
-			if(GET_PIXEL(mask, x, y + j) == 0xff) {
-				endy = y + j;
-				break;
-			}
+	}
+	max_dist = endy + 1 - y;
+	for(i=0; i<max_dist; i++) {
+		if(GET_PIXEL(mask, x, y + i) == 0xff) {
+			endy = y + i;
+			break;
 		}
 	}
 
