@@ -111,6 +111,25 @@ static int find_nearest(int x, int y, struct img_pixmap *mask, int max_dist, int
 			break;
 		}
 	}
+	/* then try the main diagonal */
+	max_dist = x - startx < y - starty ? x - startx : y - starty;
+	for(i=0; i<max_dist; i++) {
+		int xoffs = x - i;
+		int yoffs = y - i;
+		if(GET_PIXEL(mask, xoffs, yoffs) == 0xff) {
+			if(startx < xoffs) startx = xoffs;
+			if(starty < yoffs) starty = yoffs;
+		}
+	}
+	max_dist = (endx - x < endy - y ? endx - x : endy - y) + 1;
+	for(i=0; i<max_dist; i++) {
+		int xoffs = x + i;
+		int yoffs = y + i;
+		if(GET_PIXEL(mask, xoffs, yoffs == 0xff)) {
+			if(endx > xoffs) endx = xoffs;
+			if(endy > yoffs) endy = yoffs;
+		}
+	}
 
 	/* find the nearest */
 	bwidth = endx + 1 - startx;
