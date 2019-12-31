@@ -25,7 +25,7 @@ content pipelines, there is also a GUI version, imaginatively called
 
 License
 -------
-Copyright (C) 2016 John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2016-2019 John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software. You may use, modify, and/or redistribute it,
 under the terms of the GNU General Public License version 3, or at your option
